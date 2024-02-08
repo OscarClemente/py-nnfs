@@ -492,8 +492,29 @@ class Model:
 
 from zipfile import ZipFile
 import os
+import cv2
 import urllib
 import urllib.request
+
+def load_mnist_dataset(dataset, path):
+    labels = os.listdir(os.path.join(path, dataset))
+
+    x = []
+    y = []
+
+    for label in labels:
+        for file in os.listdir(os.path.join(path, dataset, label)):
+            image = cv2.imread(os.path.join(path, dataset, label, file), cv2.IMREAD_UNCHANGED)
+            x.append(image)
+            y.append(label)
+    
+    return np.array(x), np.array(y).astype('uint8')
+
+def create_data_mnist(path):
+    x, y = load_mnist_dataset('train', path)
+    x_test, y_test = load_mnist_dataset('test', path)
+
+    return x, y, x_test, y_test
 
 URL = 'https://nnfs.io/datasets/fashion_mnist_images.zip'
 FILE = 'fashion_mnist_images.zip' # Update .gitignore with this file
@@ -505,6 +526,6 @@ if not os.path.isdir(FOLDER):
     print('Unzipping images...')
     with ZipFile(FILE) as zip_images:
         zip_images.extractall(FOLDER)
+    print('Done!')
 
-
-print('Done!')
+x, y, x_test, y_test = create_data_mnist(FOLDER)
