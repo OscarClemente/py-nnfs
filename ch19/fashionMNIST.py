@@ -511,8 +511,10 @@ def load_mnist_dataset(dataset, path):
     return np.array(x), np.array(y).astype('uint8')
 
 def create_data_mnist(path):
+    print('loading mnist dataset')
     x, y = load_mnist_dataset('train', path)
     x_test, y_test = load_mnist_dataset('test', path)
+    print('mnist dataset loaded')
 
     return x, y, x_test, y_test
 
@@ -529,3 +531,10 @@ if not os.path.isdir(FOLDER):
     print('Done!')
 
 x, y, x_test, y_test = create_data_mnist(FOLDER)
+x = (x.astype(np.float32) - 127.5) / 127.5
+x_test = (x_test.astype(np.float32) - 127.5) / 127.5
+
+x = x.reshape(x.shape[0], -1)
+x_test = x_test.reshape(x_test.shape[0], -1)
+
+print(y[0:10])
