@@ -537,4 +537,8 @@ x_test = (x_test.astype(np.float32) - 127.5) / 127.5
 x = x.reshape(x.shape[0], -1)
 x_test = x_test.reshape(x_test.shape[0], -1)
 
+keys = np.array(range(x.shape[0]))
+np.random.shuffle(keys)
+x = x[keys]
+y = y[keys]
 print(y[0:10])
