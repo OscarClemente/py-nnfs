@@ -124,7 +124,7 @@ class Loss:
         data_loss = np.mean(sample_losses)
 
         self.accumulated_sum += np.sum(sample_losses)
-        self.accoumulated_count += len(sample_losses)
+        self.accumulated_count += len(sample_losses)
 
         if not include_regularization:
             return data_loss
@@ -626,4 +626,24 @@ keys = np.array(range(x.shape[0]))
 np.random.shuffle(keys)
 x = x[keys]
 y = y[keys]
-print(y[0:10])
+
+
+model = Model()
+
+model.add(Layer_Dense(x.shape[1], 64))
+model.add(Activation_ReLU())
+model.add(Layer_Dense(64, 64))
+model.add(Activation_ReLU())
+model.add(Layer_Dense(64, 10))
+model.add(Activation_Softmax())
+
+model.set(
+    loss=Loss_CategoricalCrossentropy(),
+    optimizer=Optimizer_Adam(decay=5e-5),
+    accuracy=Accuracy_Categorical()
+)
+
+model.finalize()
+
+model.train(x, y, validation_data=(x_test, y_test),
+            epochs=5, batch_size=128, print_every=100)
