@@ -1,7 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import nnfs
-from nnfs.datasets import spiral_data
+import pickle
+import copy
 
 nnfs.init()
 
@@ -46,6 +46,10 @@ class Layer_Dense:
     
     def get_parameters(self):
         return self.weights, self.biases
+    
+    def set_parameters(self, weights, biases):
+        self.weights = weights
+        self.biases = biases
 
 class Layer_Dropout:
     def __init__(self, rate):
@@ -442,10 +446,15 @@ class Model:
     def add(self, layer):
         self.layers.append(layer)
     
-    def set(self, *, loss, optimizer, accuracy):
-        self.loss = loss
-        self.optimizer = optimizer
-        self.accuracy = accuracy
+    def set(self, *, loss=None, optimizer=None, accuracy=None):
+        if loss is not None:
+            self.loss = loss
+
+        if optimizer is not None:
+            self.optimizer = optimizer
+        
+        if accuracy is not None:
+            self.accuracy = accuracy
     
     def forward(self, x, training):
         self.input_layer.forward(x, training)
@@ -552,7 +561,9 @@ class Model:
                 self.output_layer_activation = self.layers[i]
             if hasattr(self.layers[i], 'weights'):
                 self.trainable_layers.append(self.layers[i])
-        self.loss.remember_trainable_layers(self.trainable_layers)
+    
+        if self.loss is not None:
+            self.loss.remember_trainable_layers(self.trainable_layers)
         
         if isinstance(self.layers[-1], Activation_Softmax) and isinstance(self.loss, Loss_CategoricalCrossentropy):
             self.softmax_classifier_output = Activation_Softmax_Loss_CategoricalCrossentropy()
@@ -599,6 +610,41 @@ class Model:
             parameters.append(layer.get_parameters())
         
         return parameters
+    
+    def set_parameters(self, parameters):
+        for parameter_set, layer in zip(parameters, self.trainable_layers):
+            layer.set_parameters(*parameter_set)
+
+    def save_parameters(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self.get_parameters(), f)
+    
+    def load_parameters(self, path):
+        with open(path, 'rb') as f:
+            self.set_parameters(pickle.load(f))
+    
+    def save(self, path):
+        model = copy.deepcopy(self)
+
+        model.loss.new_pass()
+        model.accuracy.new_pass()
+
+        model.input_layer.__dict__.pop('output', None)
+        model.loss.__dict__.pop('dinputs', None)
+
+        for layer in model.layers:
+            for property in ['inputs', 'output', 'dinputs', 'dweights', 'dbiases']:
+                layer.__dict__.pop(property, None)
+        
+        with open(path, 'wb') as f:
+            pickle.dump(model, f)
+    
+    @staticmethod
+    def load(path):
+        with open(path, 'rb') as f:
+            model = pickle.load(f)
+        
+        return model
 
 
 from zipfile import ZipFile
@@ -675,3 +721,6 @@ model.train(x, y, validation_data=(x_test, y_test),
             epochs=5, batch_size=128, print_every=100)
 
 model.evaluate(x_test, y_test)
+
+parameters = model.get_parameters()
+print(parameters)
