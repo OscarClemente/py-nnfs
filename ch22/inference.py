@@ -603,6 +603,27 @@ class Model:
                 f'acc: {validation_accuracy:.3f}, ' +
                 f'loss: {validation_loss:.3f}')
     
+    def predict(self, x, *, batch_size=None):
+        prediction_steps = 1
+        if batch_size is not None:
+            prediction_steps = len(x) // batch_size
+            if prediction_steps * batch_size < len(x):
+                prediction_steps += 1
+        
+        output = []
+
+        for step in range(prediction_steps):
+            if batch_size is None:
+                batch_x = x
+            else:
+                batch_x = x[step*batch_size:(step+1)*batch_size]
+            
+            batch_output = self.forward(batch_x, training=False)
+            output.append(batch_output)
+        
+        return np.vstack(output)
+
+    
     def get_parameters(self):
         parameters = []
 
@@ -700,27 +721,6 @@ x = x[keys]
 y = y[keys]
 
 
-model = Model()
-
-model.add(Layer_Dense(x.shape[1], 64))
-model.add(Activation_ReLU())
-model.add(Layer_Dense(64, 64))
-model.add(Activation_ReLU())
-model.add(Layer_Dense(64, 10))
-model.add(Activation_Softmax())
-
-model.set(
-    loss=Loss_CategoricalCrossentropy(),
-    optimizer=Optimizer_Adam(decay=5e-5),
-    accuracy=Accuracy_Categorical()
-)
-
-model.finalize()
-
-model.train(x, y, validation_data=(x_test, y_test),
-            epochs=5, batch_size=128, print_every=100)
-
-model.evaluate(x_test, y_test)
-
-parameters = model.get_parameters()
-print(parameters)
+model = Model.load('fashion_mnist.model')
+confidences = model.predict(x_test[:5])
+print(confidences)
